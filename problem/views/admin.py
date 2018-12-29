@@ -12,12 +12,11 @@ from django.db.models import Q
 from django.http import StreamingHttpResponse, FileResponse
 
 from account.decorators import problem_permission_required, ensure_created_by
-from account.models import User
-from contest.models import Contest, ContestStatus, ContestRuleType, OIContestRank, ACMContestRank
+from contest.models import Contest, ContestStatus
+from contest.tasks import contest_rejudge_task
 from fps.parser import FPSHelper, FPSParser
 from judge.dispatcher import SPJCompiler
 from judge.languages import language_names
-from judge.tasks import judge_task
 from submission.models import Submission, JudgeStatus
 from utils.api import APIView, CSRFExemptAPIView, validate_serializer, APIError
 from utils.constants import Difficulty
@@ -707,7 +706,6 @@ class ProblemRejudgeAPI(APIView):
     def get(self, request):
         cid = request.GET.get("contest_id")
         pid = request.GET.get("problem_id")
-        ce_cnt = dict()
         if not pid:
             return self.error("Parameter error, id is required")
         if cid:
@@ -731,44 +729,5 @@ class ProblemRejudgeAPI(APIView):
         for submission in submissions:
             if submission.result == JudgeStatus.PENDING or submission.result == JudgeStatus.JUDGING:
                 return self.error("Judgeing or pending submissions left")
-            if submission.result == JudgeStatus.COMPILE_ERROR:
-                now_cnt = ce_cnt.get(submission.user_id, 0)
-                ce_cnt[submission.user_id] = now_cnt + 1
-        problem.statistic_info = {}
-        problem.accepted_number = 0
-        problem.submission_number = 0
-        problem.save()
-        if cid:
-            contest = Contest.objects.get(id=cid)
-            if contest.rule_type == ContestRuleType.ACM:
-                ranks = ACMContestRank.objects.filter(contest_id=cid)
-                for rank in ranks:
-                    if rank.submission_info:
-                        problem_info = rank.submission_info.get(str(pid))
-                        if problem_info:
-                            user = User.objects.get(id=rank.user_id)
-                            user.userprofile.acm_problems_status["contest_problems"].pop(str(pid))
-                            user.userprofile.save()
-                            rank.submission_number -= problem_info["error_number"]
-                            if rank.user_id in ce_cnt:
-                                rank.submission_number -= ce_cnt[rank.user_id]
-                                ce_cnt.pop(rank.user_id)
-                            if problem_info["is_ac"]:
-                                rank.submission_number -= 1
-                                rank.accepted_number -= 1
-                                rank.total_time = rank.total_time - problem_info["error_number"] * 20 * 60
-                                rank.total_time = rank.total_time - int(problem_info["ac_time"])
-                            rank.submission_info.pop(str(pid))
-                            rank.save()
-            else:
-                ranks = OIContestRank.objects.filter(contest_id=cid)
-                # todo: clear the rank for single problem
-                pass
-        for submission in submissions:
-            submission.info = {}
-            submission.statistic_info = {}
-            submission.result = JudgeStatus.PENDING
-            submission.save()
-        for submission in submissions:
-            judge_task.delay(submission.id, pid)
+        contest_rejudge_task.delay(cid, pid, submissions, problem)
         return self.success()
