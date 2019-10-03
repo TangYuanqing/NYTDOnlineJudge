@@ -1,85 +1,29 @@
 # OnlineJudge 2.0
 
-[![Python](https://img.shields.io/badge/python-3.6.2-blue.svg?style=flat-square)](https://www.python.org/downloads/release/python-362/)
-[![Django](https://img.shields.io/badge/django-1.11.4-blue.svg?style=flat-square)](https://www.djangoproject.com/)
-[![Django Rest Framework](https://img.shields.io/badge/django_rest_framework-3.4.0-blue.svg?style=flat-square)](http://www.django-rest-framework.org/)
-[![Build Status](https://travis-ci.org/QingdaoU/OnlineJudge.svg?branch=master)](https://travis-ci.org/QingdaoU/OnlineJudge)
+定制版QDUOJ,添加了比赛rejudge,代码查重,用户名限制等功能,需要与[前端](https://github.com/ExpMango/OnlineJudgeFE)配合使用.
 
-> #### An onlinejudge system based on Python and Vue. [Demo](https://qduoj.com)
+# Feature
 
-[中文文档](README-CN.md)
+## Contest rejudge功能:
 
-## Overview
+管理员先将需要rejudge的题目隐藏起来,等若干秒使得队列里没有该题目的新提交,然后点击比赛中题目列表的rejudge按钮即可.
 
-+ Based on Docker; One-click deployment
-+ Separated backend and frontend; Modular programming; Micro service
-+ ACM/OI rule support; realtime/non-realtime rank support
-+ Amazing charting and visualization
-+ Template-problem support
-+ More reasonable permission control
-+ Multi-language support: `C`, `C++`, `Java`, `Python2`, `Python3`
-+ Markdown & MathJax support
-+ Contest participants IP limit(CIDR)
 
-Main modules are available below:
+## 用户名限制: 
 
-+ Backend(Django): [https://github.com/QingdaoU/OnlineJudge](https://github.com/QingdaoU/OnlineJudge)
-+ Frontend(Vue): [https://github.com/QingdaoU/OnlineJudgeFE](https://github.com/QingdaoU/OnlineJudgeFE)
-+ Judger Sandbox(Seccomp): [https://github.com/QingdaoU/Judger](https://github.com/QingdaoU/Judger)
-+ JudgeServer(A wrapper for Judger): [https://github.com/QingdaoU/JudgeServer](https://github.com/QingdaoU/JudgeServer)
+在contest描述中 最后的地方添加 “limit:#xxxx#“(不包含引号)即可,其中xxxx为用户名需要满足的正则表达式,如 limit:#201[5-8]11[0-9]{4}# 将使得用户名为"2015111234"的用户能够进入比赛,而"acm201111"的用户不能进入比赛.
 
-## Installation
+## 比赛代码查重
 
-Follow me:  [https://github.com/QingdaoU/OnlineJudgeDeploy/tree/2.0](https://github.com/QingdaoU/OnlineJudgeDeploy/tree/2.0)
+比赛结束后在前台点击一键查重,然后进入查重页面即可看到结果(相似度40%以上).该功能需要在比赛结束后点,同时被查到的代码会被公开(share).
 
-## Documents
+# 功能列表与进度
 
-[https://docs.onlinejudge.me/](https://docs.onlinejudge.me/)
+- [x] 完成contest的rejudge功能
+- [x] 添加contest用户名限制功能(正则检查)
+- [ ] 重写contest rank字段逻辑,更好的支持rejudge功能
+- [ ] 将比赛用户名限制作为单独一个字段,并在前端添加对应位置.
+- [x] contest代码相似查重 
+- [ ] PE(格式错误)
 
-## Screenshots
 
-### Frontend:
-
-![problem-list](https://user-images.githubusercontent.com/20637881/33372506-402022e4-d539-11e7-8e64-6656f8ceb75a.png)
-
-![problem-details](https://user-images.githubusercontent.com/20637881/33372507-4061a782-d539-11e7-8835-076ddae6b529.png)
-
-![statistic-info](https://user-images.githubusercontent.com/20637881/33372508-40a0c6ce-d539-11e7-8d5e-024541b76750.png)
-
-![contest-list](https://user-images.githubusercontent.com/20637881/33372509-40d880dc-d539-11e7-9eba-1f08dcb6b9a0.png)
-
-You can control the menu and chart status in rankings.
-
-![acm-rankings](https://user-images.githubusercontent.com/20637881/33372510-41117f68-d539-11e7-9947-70e60bad3cf2.png)
-
-![oi-rankings](https://user-images.githubusercontent.com/20637881/33372511-41d406fa-d539-11e7-9947-7a2a088785b0.png)
-
-![status](https://user-images.githubusercontent.com/20637881/33372512-420ba240-d539-11e7-8645-594cac4a0b78.png)
-
-![status-details](https://user-images.githubusercontent.com/20637881/33365523-787bd0ea-d523-11e7-953f-dacbf7a506df.png)
-
-![user-home](https://user-images.githubusercontent.com/20637881/33365521-7842d808-d523-11e7-84c1-2e2aa0079f32.png)
-
-### Admin: 
-
-![admin-users](https://user-images.githubusercontent.com/20637881/33372516-42c34fda-d539-11e7-9f4e-5109477f83be.png)
-
-![judge-server](https://user-images.githubusercontent.com/20637881/33372517-42faef9e-d539-11e7-9f17-df9be3583900.png)
-
-![create-problem](https://user-images.githubusercontent.com/20637881/33372513-42472162-d539-11e7-8659-5497bf52dbea.png)
-
-![create-contest](https://user-images.githubusercontent.com/20637881/33372514-428ab922-d539-11e7-8f68-da55dedf3ad3.png)
-
-## Browser Support
-
-Modern browsers(chrome, firefox) and Internet Explorer 10+.
-
-## Thanks
-
-+ I'd appreciate a star if you find this helpful.
-+ Thanks to everyone that contributes to this project.
-+ Special thanks to [heb1c](https://github.com/hebicheng), who has given us a lot of suggestions.
-
-## License
-
-[MIT](http://opensource.org/licenses/MIT)

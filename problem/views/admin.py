@@ -13,6 +13,7 @@ from django.http import StreamingHttpResponse, FileResponse
 
 from account.decorators import problem_permission_required, ensure_created_by
 from contest.models import Contest, ContestStatus
+from contest.tasks import contest_rejudge_task
 from fps.parser import FPSHelper, FPSParser
 from judge.dispatcher import SPJCompiler
 from options.options import SysOptions
@@ -29,6 +30,7 @@ from ..serializers import (CreateContestProblemSerializer, CompileSPJSerializer,
                            ExportProblemRequestSerialzier, UploadProblemForm, ImportProblemSerializer,
                            FPSProblemSerializer)
 from ..utils import TEMPLATE_BASE, build_problem_template
+from account.decorators import super_admin_required
 
 
 class TestCaseZipProcessor(object):
@@ -699,3 +701,35 @@ class FPSProblemImport(CSRFExemptAPIView):
                 problem_data["test_case_score"] = score
                 self._create_problem(problem_data, request.user)
         return self.success({"import_count": len(problems)})
+
+
+class ProblemRejudgeAPI(APIView):
+    @super_admin_required
+    def get(self, request):
+        cid = request.GET.get("contest_id")
+        pid = request.GET.get("problem_id")
+        if not pid:
+            return self.error("Parameter error, id is required")
+        if cid:
+            try:
+                problem = Problem.objects.get(_id=pid, contest_id=cid)
+                pid = problem.id
+            except Problem.DoesNotExist:
+                return self.error("Problem doesn't exist")
+        else:
+            try:
+                problem = Problem.objects.get(_id=pid, contest_id__isnull=True)
+                pid = problem.id
+            except Problem.DoesNotExist:
+                return self.error("Problem doesn't exist")
+        if problem.visible:
+                return self.error("Problem should be invisiable")
+        try:
+            submissions = Submission.objects.filter(problem_id=pid).order_by("create_time").order_by("create_time")
+        except Submission.DoesNotExist:
+            return self.error("No submission for this problem")
+        for submission in submissions:
+            if submission.result == JudgeStatus.PENDING or submission.result == JudgeStatus.JUDGING:
+                return self.error("Judgeing or pending submissions left")
+        contest_rejudge_task.delay(cid, pid, submissions, problem)
+        return self.success()
